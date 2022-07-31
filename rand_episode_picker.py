@@ -5,53 +5,107 @@ import psutil
 from datetime import date, datetime
 import re
 from dateutil import relativedelta
+from tkinter import *
+from tkinter import filedialog
 
-if not os.path.exists("C:\\Users\\Srinath\\Documents\\Random Episode Picker"):
-    os.mkdir("C:\\Users\\Srinath\\Documents\\Random Episode Picker")
 
-if not os.path.exists("C:\\Users\\Srinath\\Documents\\Random Episode Picker\\cache.txt"):
-    open("C:\\Users\\Srinath\\Documents\\Random Episode Picker\\cache.txt", 'x')
-
-path = "F:\\Media\\Shows\\Top Gear"
-cache_path = "C:\\Users\\Srinath\\Documents\\Random Episode Picker\\cache.txt"
+docs_dir = os.path.expanduser("~\\Documents\\Random Episode Picker")
+cache_path = os.path.expanduser("~\\Documents\\Random Episode Picker\\cache.txt")
+dir_path = os.path.expanduser("~\\Documents\\Random Episode Picker\\directory.txt")
 today = date.today()
 
 
-def rand_episode(media_path=path):
-    season_list = os.listdir(media_path)
+def initialize():
+    if not os.path.exists(docs_dir):
+        os.mkdir(docs_dir)
+
+    if not os.path.exists(cache_path):
+        open(cache_path, 'x')
+
+    if not os.path.exists(dir_path):
+        open(dir_path, 'x')
+        first_time_setup()
+
+
+def first_time_setup():
+
+    def ask_directory():
+        global var
+        dirname = filedialog.askdirectory()
+        path_label.config(text=dirname)
+        var = dirname
+
+    def populate_directory():
+        with open(dir_path, 'a+') as f:
+            f.write(var)
+        root.destroy()
+
+    root = Tk()
+
+    root.wm_title("REP - First Time Setup")
+
+    context_label = Label(root, text="Media Folder Path: ")
+    context_label.grid(row=0, column=0, padx=10)
+
+    browse_button = Button(root, text="Browse", command=ask_directory)
+    browse_button.grid(row=0, column=1)
+
+    path_label = Label(root)
+    path_label.grid(row=0, column=2, padx=5)
+
+    save_button = Button(root, text="Save to File", command=populate_directory)
+    save_button.grid(row=1, column=2)
+
+    root.mainloop()
+
+
+def dir_check():
+    with open(dir_path, 'r') as f:
+        return f.readline()
+
+
+def rand_episode():
+    season_list = os.listdir(path)
     season_path = path + "\\" + random.choice(season_list)
 
     episode_list = os.listdir(season_path)
     episode_path = season_path + "\\" + random.choice(episode_list)
+    print(episode_path)
     return episode_path
 
 
-def check_cache(cache=cache_path, media_path=path):
-    ep = rand_episode(media_path)
-    if os.path.getsize(cache) == 0:
-        with open(cache, 'a') as f:
+def check_cache():
+    ep = rand_episode()
+    if os.path.getsize(cache_path) == 0:
+        with open(cache_path, 'a') as f:
             f.write(str(today) + " - " + ep)
             f.write('\n')
         return ep
     else:
-        with open(cache, 'a+') as f:
+        with open(cache_path, 'a+') as f:
             while ep in f:
-                ep = rand_episode(media_path)
+                ep = rand_episode()
             else:
                 f.write(str(today) + " - " + ep)
                 f.write('\n')
     return ep
 
 
-def clear_cache(cache=cache_path, current_date=today):
-    with open(cache, 'r+') as f:
+def clear_cache():
+    files_in_dir = 0
+    for root_dir, cur_dir, files in os.walk(dir_path):
+        files_in_dir += len(files)
+
+    with open(cache_path, 'r+') as f:
         cache_lines = f.readlines()
         while True:
             if cache_lines:
                 search_date = re.search(r'\d+-\d+-\d', cache_lines[0])
                 episode_date = datetime.strptime(search_date.group(), '%Y-%m-%d').date()
-                delta = relativedelta.relativedelta(current_date, episode_date)
+                delta = relativedelta.relativedelta(today, episode_date)
                 if delta.months >= 1:
+                    cache_lines.pop(0)
+                elif len(cache_lines) >= files_in_dir:
                     cache_lines.pop(0)
                 else:
                     break
@@ -75,6 +129,8 @@ def open_vlc(source):
     return source
 
 
+initialize()
+path = dir_check().replace('/', '\\')
 clear_cache()
 new_episode = check_cache()
 open_vlc(new_episode)
