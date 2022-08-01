@@ -100,7 +100,7 @@ def clear_cache():
         cache_lines = f.readlines()
         while True:
             if cache_lines:
-                search_date = re.search(r'\d+-\d+-\d', cache_lines[0])
+                search_date = re.search(r'\d+-\d+-\d+', cache_lines[0])
                 episode_date = datetime.strptime(search_date.group(), '%Y-%m-%d').date()
                 delta = relativedelta.relativedelta(today, episode_date)
                 if delta.months >= 1:
