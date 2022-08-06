@@ -125,7 +125,10 @@ def open_vlc(source):
         os.system("TASKKILL /T /IM vlc.exe")
         subprocess.Popen(["C:/Program Files/VideoLAN/VLC/vlc.exe", source])
     else:
-        subprocess.Popen(["C:/Program Files/VideoLAN/VLC/vlc.exe", source])
+        try:
+            subprocess.Popen(["C:/Program Files/VideoLAN/VLC/vlc.exe", source])
+        except FileNotFoundError:
+            print("vlc.exe does not exist in path 'C:/Program Files/VideoLAN/VLC/vlc.exe' ")
     return source
 
 
